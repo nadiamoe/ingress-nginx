@@ -13,7 +13,7 @@
 # limitations under the License.
 
 BUILDER ?= ingress-nginx
-PLATFORMS ?= linux/amd64,linux/arm,linux/arm64
+PLATFORMS ?= linux/amd64,linux/arm64
 REGISTRY ?= ghcr.io/nadiamoe/ingress-nginx/staging
 IMAGE ?= $(REGISTRY)/nginx
 TAG ?= $(shell cat TAG)
