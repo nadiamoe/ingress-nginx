@@ -32,6 +32,9 @@ on:
 permissions:
   contents: read
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
 
   changes:
@@ -82,7 +85,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      
+
       - name: Lint Lua
         uses: lunarmodules/luacheck@v1
         with:
@@ -110,7 +113,7 @@ jobs:
       - name: Run test
         run: make test
 
-        
+
   verify-docs:
     name: Verify Doc generation
     runs-on: ubuntu-latest
@@ -181,17 +184,16 @@ jobs:
           needs.changes.outputs.baseimage == 'true'
         run: |
             export TAG=$(cat images/nginx/TAG)
-            cd images/nginx/rootfs && docker buildx build --platform=${{ env.PLATFORMS }} --load -t registry.k8s.io/ingress-nginx/nginx:${TAG} .
+            cd images/nginx/rootfs && docker buildx build --platform=${{ env.PLATFORMS }} --load -t ${{ env.REGISTRY }}/${{ github.repository }}/nginx:${TAG} .
 
       - name: Build images
         env:
           TAG: 1.0.0-dev
           ARCH: amd64
-          REGISTRY: ingress-controller
         run: |
           echo "building images..."
           export TAGNGINX=$(cat images/nginx/TAG)
-          make BASE_IMAGE=registry.k8s.io/ingress-nginx/nginx:${TAGNGINX} clean-image build image image-chroot
+          make BASE_IMAGE=${{ env.REGISTRY }}/${{ github.repository }}/nginx:${TAGNGINX} clean-image build image image-chroot
           make -C test/e2e-image image
 
           echo "creating images cache..."
