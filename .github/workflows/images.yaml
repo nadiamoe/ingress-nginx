@@ -18,6 +18,7 @@ permissions:
   packages: write
 
 env:
+  REGISTRY: ghcr.io
   PLATFORMS: linux/amd64
 
 jobs:
@@ -95,4 +96,4 @@ jobs:
       - name: build-image
         run: |
           export TAG=$(cat images/nginx/TAG)
-          cd images/nginx/rootfs && docker buildx build --platform=${{ env.PLATFORMS }} --push -t ${{ github.repository }}/nginx:${TAG} .
+          cd images/nginx/rootfs && docker buildx build --platform=${{ env.PLATFORMS }} --push -t ${{ env.REGISTRY }}/${{ github.repository }}/nginx:${TAG} .
