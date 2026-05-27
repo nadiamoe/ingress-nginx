@@ -71,8 +71,9 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     needs: changes
+    # FIXME: Always-run while iterating on CI/CD.
     if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.nginx == 'true')
+      true || (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.nginx == 'true')
     env:
       PLATFORMS: linux/amd64,linux/arm,linux/arm64
     steps:
