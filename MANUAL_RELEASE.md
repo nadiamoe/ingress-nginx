@@ -93,7 +93,7 @@ Promoting the images basically means that images, that were pushed to staging co
 
   ```
   ...
-  pushing manifest for us-central1-docker.pkg.dev/k8s-staging-images/ingress-nginx/controller:v1.0.2@sha256:e15fac6e8474d77e1f017edc33d804ce72a184e3c0a30963b2a0d7f0b89f6b16
+  pushing manifest for ghcr.io/nadiamoe/ingress-nginx/staging/controller:v1.0.2@sha256:e15fac6e8474d77e1f017edc33d804ce72a184e3c0a30963b2a0d7f0b89f6b16
   ...
   ```
 
