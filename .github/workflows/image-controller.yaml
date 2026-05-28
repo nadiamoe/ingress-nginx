@@ -1,0 +1,116 @@
+name: Build or release controller image
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - release-*
+    paths-ignore:
+      - 'docs/**'
+      - 'deploy/**'
+      - '**.md'
+      - 'images/**' # Images changes should be tested on their own workflow
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}/controller
+  PLATFORMS: linux/amd64,linux/arm64
+
+jobs:
+  build:
+    name: Build or push image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        id: go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: GOLANG_VERSION
+          check-latest: true
+
+      - name: Source build args
+        id: buildargs
+        run: |-
+          echo "base_image=$(cat NGINX_BASE)" >> $GITHUB_OUTPUT
+          echo "version=$(cat TAG)" >> $GITHUB_OUTPUT
+
+      - name: Build Go binaries
+        env:
+          PKG: k8s.io/ingress-nginx
+          COMMIT_SHA: ${{ github.sha }}
+          REPO_INFO: ${{ github.server_url }}/${{ github.repository}}.git
+          TAG: ${{ steps.buildargs.outputs.version }}
+        run: |-
+          echo "$PLATFORMS" | tr , $'\n' | sed s#linux/## | while read arch; do
+            ARCH="$arch" bash build/build.sh # POSIX sh does not understand pipefail.
+          done
+
+      # Set up BuildKit Docker container builder to be able to build
+      # multi-platform images and export cache
+      # https://github.com/docker/setup-buildx-action
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Available platforms
+        env:
+          platforms: ${{ steps.buildx.outputs.platforms }}
+        run: echo "$platforms"
+
+      # Login against a Docker registry except on PR
+      # https://github.com/docker/login-action
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name == 'push'
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: |
+            tag:
+              - 'TAG'
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build or push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ./rootfs # Source go binaries built in previous step
+          platforms: ${{ env.PLATFORMS }}
+          build-args: |-
+            BASE_IMAGE=${{ steps.buildargs.outputs.base_image }}
+          push: ${{ github.event_name == 'push' && steps.filter.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.buildargs.outputs.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # TODO: Maybe consider removing this if zizmor complains.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
