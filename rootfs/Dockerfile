@@ -17,19 +17,6 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
 ARG TARGETARCH
-ARG VERSION
-ARG COMMIT_SHA
-ARG BUILD_ID=UNSET
-
-LABEL org.opencontainers.image.title="NGINX Ingress Controller for Kubernetes"
-LABEL org.opencontainers.image.documentation="https://kubernetes.github.io/ingress-nginx/"
-LABEL org.opencontainers.image.source="https://github.com/kubernetes/ingress-nginx"
-LABEL org.opencontainers.image.vendor="The Kubernetes Authors"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
-LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.revision="${COMMIT_SHA}"
-
-LABEL build_id="${BUILD_ID}"
 
 WORKDIR  /etc/nginx
 
@@ -66,7 +53,7 @@ RUN bash -xeu -c ' \
   # Put libs of newer modules under `/modules_mount/<other>/lib` and add that path below
   # Could get complicated arch specific paths become a need
   && echo "/lib:/usr/lib:/usr/local/lib:/modules_mount/etc/nginx/modules/otel" > /etc/ld-musl-x86_64.path
-  
+
 
 RUN apk add --no-cache libcap \
   && setcap    cap_net_bind_service=+ep /nginx-ingress-controller \
