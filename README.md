@@ -1,5 +1,11 @@
 # Ingress NGINX Retirement
 
+## Fork status (`grafana/ingress-nginx`)
+
+> [!WARNING]
+> This is a maintenance fork only, which receives minimal testing scoped to the usage the fork sees within Grafana Labs.
+> Grafana Labs does not provide support for running this project in your systems, nor encourages contributions to it.
+
 ## Retiring
 
 [What You Need to Know about Ingress NGINX Retirement](https://www.kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/):
